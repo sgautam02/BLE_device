@@ -1,0 +1,151 @@
+//Is Device bluetooth is on
+ void toggleState() {
+    isScanning = !isScanning;
+
+    if (isScanning) {
+      flutterBlue.startScan( timeout: Duration(seconds: 5),
+          scanMode: ScanMode(scan_mode), allowDuplicates: true);
+      scan();
+
+    } else {
+      flutterBlue.stopScan();
+    }
+    setState(() {
+
+
+    });
+  }
+
+
+  *//* Scan *//*
+  void scan() async {
+    if (isScanning) {
+      // Listen to scan results
+
+      flutterBlue.scanResults.listen((results) {
+        // do something with scan results
+
+        scanResultList = results;
+        // update state
+        setState(() {
+        });
+      });
+    }
+  }
+
+  *//* device RSSI *//*
+  Widget deviceSignal(ScanResult r) {
+    return Text(r.rssi.toString());
+  }
+
+  *//* device MAC address  *//*
+  Widget deviceMacAddress(ScanResult r) {
+    return Text(r.device.id.id);
+  }
+
+
+  Widget deviceName(ScanResult r) {
+    String name;
+
+    if (r.device.name.isNotEmpty) {
+      name = r.device.name;
+    } else if (r.advertisementData.localName.isNotEmpty) {
+      name = r.advertisementData.localName;
+    } else {
+      name = 'N/A';
+    }
+    return Text(name);
+  }
+
+
+  Widget leading(ScanResult r) {
+
+    return CircleAvatar(
+      backgroundColor: Colors.cyan,
+      child: Row(
+        children: [
+
+          Icon(
+            Icons.bluetooth,
+            color: Colors.white,
+          ),
+        ],
+      ),
+    );
+  }
+  void onTap(ScanResult r) {
+    print('${r.device.name }');
+  }
+  Widget listItem(ScanResult r) {
+    return ListTile(
+      onTap: () => Get.to(() => DeviceInfo(scanDevice: r)) ,
+      leading: leading(r),
+      title: deviceName(r),
+      subtitle: deviceMacAddress(r),
+      trailing: deviceSignal(r),
+    );
+  }
+
+  String connectToDevice(ScanResult r )  {
+    try {
+      // Connect to the Bluetooth device.
+      r.device.connect();
+
+      // If the connection is successful, you can now interact with the device.
+      // For example, you can read characteristics or send commands.
+      // You can listen to notifications or indications from the device as well.
+      return r.device.connect().toString();
+    } catch (e) {
+      // Handle any errors that occur during the connection process.
+      return 'Error connecting to the device: $e';
+    }
+  }
+ @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+        actions: [
+          Switch(
+            value:isBluetoothOn,
+            onChanged: (bool value) {},
+          )
+        ],
+      ),
+      body: Center(
+        child: ListView.separated(
+          itemCount: scanResultList.length,
+          itemBuilder: (context, index) {
+            return listItem(scanResultList[index]);
+          },
+          separatorBuilder: (BuildContext context, int index) {
+            return const Divider();
+          },
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: toggleState,
+        child: Icon(isScanning ? Icons.stop : Icons.search),
+      ),
+    );
+  }
+
+  Future<void> writeValue(List<int> value) async {
+      BluetoothService? bluetoothService = bluetoothServices?.firstWhere((element) => element.uuid.toString() == '0000fea6-0000-1000-8000-00805f9b34fb');
+      BluetoothCharacteristic? bluetoothCharacteristic =
+      bluetoothService?.characteristics.firstWhere((element) => element.uuid.toString() == 'b5f90072-aa8d-11e3-9046-0002a5d5c51b');
+      bluetoothCharacteristic?.write(value);
+    }
+
+    Future<void> readValue(String characteristicUUID) async {
+      BluetoothService? bluetoothService = bluetoothServices?.firstWhere((element) => element.uuid.toString() == 'cb43219d-5e34-49f2-ab75-22aa49b605f1');
+
+      BluetoothCharacteristic? bluetoothCharacteristic =
+      bluetoothService?.characteristics.firstWhere((element) => element.uuid.toString() == '$characteristicUUID');
+      List<int>? utf8Response = await bluetoothCharacteristic?.read();
+      setState(() {
+        readableValue = utf8.decode(utf8Response ?? []);
+
+        print(characteristicUUID);
+      });
+    }
